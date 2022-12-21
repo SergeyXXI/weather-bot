@@ -1,24 +1,12 @@
 import axios from "axios";
-import { session } from "telegraf";
 import { message } from "telegraf/filters";
 import bot from "./bot/bot.js";
 import { 
-    defaultRegion, addKeyboard, removeKeyboard, isValid,
+    addKeyboard, removeKeyboard, isValid,
     getIconFileId, getWeatherCondition, userRequest, finishRequest
 } from "./bot/helpers.js";
-import { stage, regionScene } from "./bot/regionScene.js";
+import { regionScene } from "./bot/regionScene.js";
 import { SHOW_WEATHER } from "./bot/actions.js";
-import { requestMW } from "./bot/mwares.js";
-
-const initialMW = async (ctx, next) =>
-{    
-    ctx.session.region ??= { ...defaultRegion };
-    ctx.session.isOwner ??= ctx.message?.from.id === +process.env.OWNER_ID;    
-
-    await next();
-};
-
-bot.use(session(), stage.middleware(), initialMW, requestMW);
 
 bot.start(async ctx =>
 {
@@ -63,7 +51,7 @@ bot.action(SHOW_WEATHER, async ctx =>
 });
 
 bot.on(message("text"), async ctx =>
-{     
+{ 
     await ctx.reply("❌ Обработка текста сейчас недоступна.");
 
     await ctx.replyWithHTML(
