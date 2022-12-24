@@ -1,4 +1,5 @@
-import { Scenes } from "telegraf";
+import { Scenes} from "telegraf";
+import { message } from "telegraf/filters";
 import axios from "axios";
 import {
     SHOW_WEATHER, CHANGE_REGION_OPTIONS,
@@ -9,8 +10,9 @@ import {
     defaultRegion, formRegionName, getLocationQuery, isValid
 } from "./helpers.js";
 import { requestMW } from "./mwares.js";
+import { BotContext } from "types/index.js";
 
-const handleUserText = async ctx =>
+const handleUserText = async (ctx: BotContext) =>
 {     
     if(!ctx.message)
     {
@@ -24,9 +26,9 @@ const handleUserText = async ctx =>
 
     const result = data[0];
     const { display_name: place, type, lat, lon } = result;
-    const name = formRegionName(result.address, type);   
+    const name = formRegionName(result.address, type);    
 
-    ctx.scene.state.region = { name, lat, lon, isDefault: false };
+    ctx.scene.session.region = { name, lat, lon, isDefault: false };
 
     await ctx.replyWithHTML(        
         `<b>${place}</b>.\n` +
@@ -35,8 +37,8 @@ const handleUserText = async ctx =>
      
 };
 
-const scene = new Scenes.WizardScene("regionScene", handleUserText);
-const stage = new Scenes.Stage([scene]);
+const scene = new Scenes.WizardScene<BotContext>("regionScene", handleUserText);
+const stage = new Scenes.Stage<BotContext>([scene]);
 
 scene.use(requestMW);
 
@@ -65,8 +67,8 @@ scene.action(CONFIRM_REGION_YES, async ctx =>
     await ctx.answerCbQuery();
     await ctx.reply("✅", removeKeyboard());
 
-    ctx.session.region = ctx.scene.state.region ?
-        { ...ctx.scene.state.region } :
+    ctx.session.region = ctx.scene.session.region ?
+        { ...ctx.scene.session.region } :
         { ...defaultRegion };
 
     await ctx.scene.leave();     
@@ -82,12 +84,14 @@ scene.leave(async ctx =>
     );
 });
 
-async function getPlaceData(ctx)
+async function getPlaceData(ctx: BotContext)
 {  
     if(!await isValid(ctx, ["command"])) return;
 
     const url = "https://nominatim.openstreetmap.org/search";
-    const qLocation = getLocationQuery(ctx.message.location);   
+    const qLocation = getLocationQuery(
+        ctx.has(message("location")) ? ctx.message.location : void 0
+    );   
 
     userRequest.isActive = true;  
 
@@ -95,7 +99,7 @@ async function getPlaceData(ctx)
     {
         params:
         {
-            q: ctx.message.text || qLocation,
+            q: ctx.has(message("text")) && ctx.message.text || qLocation,
             format: "jsonv2",
             addressdetails: "1",            
             limit: "1",

@@ -1,5 +1,5 @@
 .vscode
 .env
 node_modules
-hidden
-bot/db.json
+dist
+bot/db-dev.json

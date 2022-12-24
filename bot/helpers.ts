@@ -1,4 +1,7 @@
 import { Markup } from "telegraf";
+import { message } from "telegraf/filters";
+import axios, { AxiosResponse } from "axios";
+import { BotContext, Address, PlaceType, Location, FinishRequestFn, Rule } from "types/index.js";
 import { 
     SHOW_WEATHER, CHANGE_REGION_OPTIONS, 
     CONFIRM_REGION, CONFIRM_REGION_YES    
@@ -19,7 +22,7 @@ const userRequest =
     isRequestWhileActive: false
 };
 
-const addKeyboard = (action, ctx) =>
+const addKeyboard = (action: string, ctx?: BotContext) =>
 {
     switch(action)
     {
@@ -33,7 +36,7 @@ const addKeyboard = (action, ctx) =>
             const customLocationBtn = Markup.button.locationRequest("🌍 Моя геолокация");
             const customCancelBtn = Markup.button.text("❌ Отмена");
             const customDefaultBtn = Markup.button.text(`${defaultRegion.nameClean}`);
-            const row = ctx.session.isOwner ?
+            const row = ctx && ctx.session.isOwner ?
                 [customLocationBtn, customCancelBtn, customDefaultBtn] :
                 [customLocationBtn, customCancelBtn];                                       
             return Markup.keyboard(row, { columns: 2 }).resize(); 
@@ -50,7 +53,7 @@ const addKeyboard = (action, ctx) =>
 
 const removeKeyboard = () => Markup.removeKeyboard();
 
-const getWeatherCondition = condition =>
+const getWeatherCondition = (condition: string) =>
 {
     switch(condition)
     {
@@ -77,7 +80,7 @@ const getWeatherCondition = condition =>
     }
 };
 
-const getIconFileId = icon =>
+const getIconFileId = (icon: string) =>
 {
     switch(icon)
     {
@@ -104,7 +107,7 @@ const getIconFileId = icon =>
     }
 };
 
-const formRegionName = (address, type) =>
+const formRegionName = (address: Address, type: PlaceType) =>
 {
     const {
         municipality = "", county = "", state = "", suburb = "",
@@ -123,9 +126,10 @@ const formRegionName = (address, type) =>
     return `<b>${result.join(", ")}</b>`;
 };
 
-const getLocationQuery = location => location ? `${location.latitude}, ${location.longitude}` : null;
+const getLocationQuery = (location?: Location) =>
+    location ? `${location.latitude}, ${location.longitude}` : null;
 
-const finishRequest = ({ ctx, textOnReady = "✅ Готов к работе!", reply } = data) =>
+const finishRequest = ({ ctx, textOnReady = "✅ Готов к работе!", reply }: FinishRequestFn) =>
 {
     setTimeout(async () =>
     {
@@ -149,7 +153,7 @@ const finishRequest = ({ ctx, textOnReady = "✅ Готов к работе!", r
     }, 1000);
 };
 
-async function isValid(ctx, rules = [], response = {})
+async function isValid(ctx: BotContext, rules: Rule[] = [], response?: AxiosResponse)
 {
     for(let i = 0; i < rules.length; i++)
     {
@@ -158,8 +162,8 @@ async function isValid(ctx, rules = [], response = {})
 
         switch(isString ? rule : rule.name)
         {
-            case "command":                
-                if(ctx.message.text && ctx.message.text.startsWith("/"))
+            case "command":                         
+                if(ctx.has(message("text")) && ctx.message.text.startsWith("/"))
                 {
                     await ctx.reply(
                         `❌ Введён некорректный текст. Запрос не должен начинаться с "/". Попробуйте снова.`
@@ -170,14 +174,14 @@ async function isValid(ctx, rules = [], response = {})
                 else break;
 
             case "status":
-                if(!response.status || response.status > 299)
+                if(response && (!response.status || response.status >= 400))
                 {
                     await ctx.reply(
                         "Произошла ошибка :( Немного подождите и попробуйте ещё раз.",
                         isString ? {} : addKeyboard(rule.action) || {}
                     ); 
                     
-                    console.log(response.message);
+                    if(axios.isAxiosError(response)) console.log(response.message);
 
                     return false;
                 }  

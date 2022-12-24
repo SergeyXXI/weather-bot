@@ -1,15 +1,17 @@
+import { MiddlewareFn } from "telegraf";
+import { BotContext } from "types/index.js";
 import { defaultRegion, userRequest } from "./helpers.js";
 
-const initialMW = async (ctx, next) =>
+const initialMW: MiddlewareFn<BotContext> = async (ctx, next) =>
 {    
     ctx.session.region ??= { ...defaultRegion };
-    ctx.session.isOwner ??= ctx.message?.from.id === +process.env.OWNER_ID ||
-                            ctx.callbackQuery?.from.id === +process.env.OWNER_ID;    
+    ctx.session.isOwner ??= ctx.message?.from.id === +process.env.OWNER_ID! ||
+                            ctx.callbackQuery?.from.id === +process.env.OWNER_ID!;    
 
     await next();
 };
 
-const requestMW = async (ctx, next) =>
+const requestMW: MiddlewareFn<BotContext> = async (ctx, next) =>
 {
     if(!userRequest.isActive) return await next();
     else

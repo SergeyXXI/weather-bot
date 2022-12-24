@@ -1,12 +1,13 @@
 import axios from "axios";
 import { message } from "telegraf/filters";
-import bot from "./bot/bot.js";
+import bot from "./bot.js";
 import { 
     addKeyboard, removeKeyboard, isValid,
     getIconFileId, getWeatherCondition, userRequest, finishRequest
-} from "./bot/helpers.js";
-import { regionScene } from "./bot/regionScene.js";
-import { SHOW_WEATHER } from "./bot/actions.js";
+} from "./helpers.js";
+import { regionScene } from "./regionScene.js";
+import { SHOW_WEATHER } from "./actions.js";
+import { BotContext } from "types/index.js";
 
 bot.start(async ctx =>
 {
@@ -60,7 +61,7 @@ bot.on(message("text"), async ctx =>
     ); 
 });
 
-async function getWeatherData(ctx)
+async function getWeatherData(ctx: BotContext)
 {    
     const url = "https://api.weather.yandex.ru/v2/forecast";
     const { lat, lon } = ctx.session.region;    
@@ -90,9 +91,12 @@ bot.launch({ dropPendingUpdates: true });
 // {
 //     webhook:
 //     {
-//         domain: process.env.WEBHOOK_DOMAIN,
+//         domain: process.env.WEBHOOK_DOMAIN!,
 //         hookPath: process.env.WEBHOOK_PATH,
-//         port: +process.env.WEBHOOK_PORT
+//         port: +process.env.WEBHOOK_PORT!
 //     },
 //     dropPendingUpdates: true
 // });
+
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
