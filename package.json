@@ -7,7 +7,7 @@
         "start": "node dist/main.js",
         "start-dev": "cross-env NODE_ENV=dev ts-node bot/main.ts",
         "dev": "cross-env NODE_ENV=dev nodemon",
-        "build": "rimraf dist && tsc",
+        "build": "rimraf dist && tsc & npm start",
         "lt": "lt --port 3000"
     },
     "author": "Sergey Z",
