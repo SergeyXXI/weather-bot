@@ -8,6 +8,7 @@ import {
 import { regionScene } from "./regionScene.js";
 import { SHOW_WEATHER } from "./actions.js";
 import { BotContext } from "types/index.js";
+// import dotenv from "dotenv"; dotenv.config();
 
 bot.start(async ctx =>
 {
@@ -85,18 +86,18 @@ async function getWeatherData(ctx: BotContext)
    
 }
 
-bot.launch({ dropPendingUpdates: true });
+// bot.launch({ dropPendingUpdates: true });
 
-// bot.launch(
-// {
-//     webhook:
-//     {
-//         domain: process.env.WEBHOOK_DOMAIN!,
-//         hookPath: process.env.WEBHOOK_PATH,
-//         port: +process.env.WEBHOOK_PORT!
-//     },
-//     dropPendingUpdates: true
-// });
+bot.launch(
+{
+    webhook:
+    {
+        domain: process.env.WEBHOOK_DOMAIN!,
+        hookPath: process.env.WEBHOOK_PATH,
+        port: +process.env.WEBHOOK_PORT!
+    },
+    dropPendingUpdates: true
+});
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));

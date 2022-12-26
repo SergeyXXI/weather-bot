@@ -1,6 +1,5 @@
 import { Telegraf } from "telegraf";
 import LocalSession from "telegraf-session-local";
-import dotenv from "dotenv"; dotenv.config(); //remove on prod
 import { BotContext } from "types/index.js";
 import { stage } from "./regionScene.js";
 import { initialMW, requestMW } from "./mwares.js";
