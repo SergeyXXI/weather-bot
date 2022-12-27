@@ -11,7 +11,9 @@ type BotSession =
         lon: number | string,
         isDefault: boolean
     },
-    isOwner: boolean
+    isOwner: boolean,
+    isCasual: boolean,
+    isSchedule: boolean    
 } & Scenes.WizardSession<RegionWizardSession>;
 
 type BotContext = 

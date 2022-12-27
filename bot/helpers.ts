@@ -1,6 +1,7 @@
 import { Markup } from "telegraf";
 import { message } from "telegraf/filters";
 import axios, { AxiosResponse } from "axios";
+import Cron from "croner";
 import { BotContext, Address, PlaceType, Location, FinishRequestFn, Rule } from "types/index.js";
 import { 
     SHOW_WEATHER, CHANGE_REGION_OPTIONS, 
@@ -21,6 +22,8 @@ const userRequest =
     isActive: false,
     isRequestWhileActive: false
 };
+
+const cronJobs: Cron[] = [];
 
 const addKeyboard = (action: string, ctx?: BotContext) =>
 {
@@ -203,9 +206,71 @@ async function isValid(ctx: BotContext, rules: Rule[] = [], response?: AxiosResp
     return true;
 }
 
+function getJobs(ctx?: BotContext)
+{
+    if(!cronJobs.length && ctx)
+    {
+        cronJobs.push( 
+            Cron("30 19 * * *", () => showWeather(ctx),
+                { paused: true, timezone: "Europe/Moscow" })            
+        );
+    }    
+
+    return cronJobs;
+}
+
+async function showWeather(ctx: BotContext)
+{
+    const result = await getWeatherData(ctx);
+
+    if(!result) return;
+
+    const {
+        temp, feels_like: feelsLike, icon,
+        condition: _condition, prec_type: _precType   
+    } = result;    
+
+    const iconId = getIconFileId(icon);
+    const condition = getWeatherCondition(_condition);
+    const precType = _precType === 0 ? ", без осадков." : ".";     
+    
+    if(iconId) await ctx.replyWithPhoto(iconId);
+    else       console.log("НОВАЯ ИКОНКА", icon);      
+    
+    await ctx.replyWithHTML(        
+        `Сейчас <b>${temp}°</b>.\n` +
+        `Ощущается как ${feelsLike}°.\n` +
+        condition + precType,
+        addKeyboard(SHOW_WEATHER)
+    );      
+}
+
+async function getWeatherData(ctx: BotContext)
+{    
+    const url = "https://api.weather.yandex.ru/v2/forecast";
+    const { lat, lon } = ctx.session.region;    
+
+    userRequest.isActive = true; 
+
+    const response = await axios.get(url,
+    {
+        params: { lat, lon, limit: 1 },
+        headers:
+        {        
+            "X-Yandex-API-Key": process.env.YAPOGODA_TOKEN        
+        },
+        timeout: 8000
+    }).catch(error => error);    
+
+    finishRequest({ ctx, reply: SHOW_WEATHER });   
+
+    return await isValid(ctx, [{ name: "status", action: SHOW_WEATHER}], response) ?
+        response.data.fact : null;  
+   
+}
+
 export { 
-    defaultRegion, formRegionName,
-    addKeyboard, removeKeyboard, 
+    defaultRegion, formRegionName, addKeyboard, removeKeyboard, 
     getWeatherCondition, getIconFileId, getLocationQuery,
-    userRequest, finishRequest, isValid
+    userRequest, finishRequest, isValid, getJobs, showWeather
 };

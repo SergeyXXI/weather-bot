@@ -1,14 +1,10 @@
-import axios from "axios";
 import { message } from "telegraf/filters";
 import bot from "./bot.js";
 import { 
-    addKeyboard, removeKeyboard, isValid,
-    getIconFileId, getWeatherCondition, userRequest, finishRequest
+    addKeyboard, removeKeyboard,  getJobs, showWeather    
 } from "./helpers.js";
 import { regionScene } from "./regionScene.js";
 import { SHOW_WEATHER } from "./actions.js";
-import { BotContext } from "types/index.js";
-// import dotenv from "dotenv"; dotenv.config();
 
 bot.start(async ctx =>
 {
@@ -18,42 +14,44 @@ bot.start(async ctx =>
         "Регион можно изменить командой /region." + "\n" +
         `Регион: ${ctx.session.region.name}.`,
         addKeyboard(SHOW_WEATHER)
-    );    
-});  
+    );     
+});
 
 bot.command("region", async ctx => await ctx.scene.enter(regionScene.id));
+
+bot.command("schedule", async ctx =>
+{        
+    if(!ctx.session.isOwner && !ctx.session.isCasual)
+    {
+        await ctx.reply("❌ Доступ запрещён. Раздел для админа.");
+        return;
+    }    
+
+    const jobs = getJobs(ctx);
+
+    if(!ctx.session.isSchedule)
+    {
+        ctx.session.isSchedule = true;     
+        jobs.forEach(job => job.resume());   
+        await ctx.reply("✅ Информирование по расписанию включено!");
+    }
+    else
+    {
+        ctx.session.isSchedule = false;        
+        jobs.forEach(job => job.pause());
+        await ctx.reply("❗ Информирование по расписанию выключено!");
+    }
+});
 
 bot.action(SHOW_WEATHER, async ctx =>
 {
     await ctx.answerCbQuery();   
     
-    const result = await getWeatherData(ctx);
-
-    if(!result) return;
-
-    const {
-        temp, feels_like: feelsLike, icon,
-        condition: _condition, prec_type: _precType   
-    } = result;    
-
-    const iconId = getIconFileId(icon);
-    const condition = getWeatherCondition(_condition);
-    const precType = _precType === 0 ? ", без осадков." : ".";     
-    
-    if(iconId) await ctx.replyWithPhoto(iconId);
-    else       console.log("НОВАЯ ИКОНКА", icon);      
-    
-    await ctx.replyWithHTML(        
-        `Сейчас <b>${temp}°</b>.\n` +
-        `Ощущается как ${feelsLike}°.\n` +
-        condition + precType,
-        addKeyboard(SHOW_WEATHER)
-    );      
-
+    showWeather(ctx);
 });
 
 bot.on(message("text"), async ctx =>
-{ 
+{     
     await ctx.reply("❌ Обработка текста сейчас недоступна.");
 
     await ctx.replyWithHTML(
@@ -61,30 +59,6 @@ bot.on(message("text"), async ctx =>
         addKeyboard(SHOW_WEATHER)
     ); 
 });
-
-async function getWeatherData(ctx: BotContext)
-{    
-    const url = "https://api.weather.yandex.ru/v2/forecast";
-    const { lat, lon } = ctx.session.region;    
-
-    userRequest.isActive = true; 
-
-    const response = await axios.get(url,
-    {
-        params: { lat, lon, limit: 1 },
-        headers:
-        {        
-            "X-Yandex-API-Key": process.env.YAPOGODA_TOKEN        
-        },
-        timeout: 8000
-    }).catch(error => error);    
-
-    finishRequest({ ctx, reply: SHOW_WEATHER });   
-
-    return await isValid(ctx, [{ name: "status", action: SHOW_WEATHER}], response) ?
-        response.data.fact : null;   
-   
-}
 
 // bot.launch({ dropPendingUpdates: true });
 
