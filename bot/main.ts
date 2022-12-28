@@ -7,8 +7,7 @@ import { showWeather } from "./handlers.js";
 import { getJobs } from "./cron.js";
 
 bot.start(async ctx =>
-{
-    console.log(ctx.message);
+{    
     await ctx.reply("Приветствую!", removeKeyboard());
     await ctx.replyWithHTML(
         "Я показываю погоду в выбранном регионе. " +
