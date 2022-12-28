@@ -1,18 +1,17 @@
 import { Scenes} from "telegraf";
-import { message } from "telegraf/filters";
-import axios from "axios";
+import { BotContext } from "types/index.js";
 import {
     SHOW_WEATHER, CHANGE_REGION_OPTIONS,
     CONFIRM_REGION, CONFIRM_REGION_YES 
 } from "./actions.js";
-import {
-    addKeyboard, removeKeyboard, userRequest, finishRequest,
-    defaultRegion, formRegionName, getLocationQuery, isValid
-} from "./helpers.js";
+import { addKeyboard, removeKeyboard, defaultRegion, formRegionName } from "./helpers.js";
 import { requestMW } from "./mwares.js";
-import { BotContext } from "types/index.js";
+import { requestPlaceData } from "./client.js";
 
-const handleUserText = async (ctx: BotContext) =>
+const scene = new Scenes.WizardScene<BotContext>("regionScene", handleUserText);
+const stage = new Scenes.Stage<BotContext>([scene]);
+
+async function handleUserText(ctx: BotContext)
 {     
     if(!ctx.message)
     {
@@ -20,7 +19,7 @@ const handleUserText = async (ctx: BotContext) =>
         return;
     }   
 
-    const data = await getPlaceData(ctx);    
+    const data = await requestPlaceData(ctx);    
 
     if(!data) return;    
 
@@ -36,9 +35,6 @@ const handleUserText = async (ctx: BotContext) =>
         addKeyboard(CONFIRM_REGION));    
      
 };
-
-const scene = new Scenes.WizardScene<BotContext>("regionScene", handleUserText);
-const stage = new Scenes.Stage<BotContext>([scene]);
 
 scene.use(requestMW);
 
@@ -83,36 +79,5 @@ scene.leave(async ctx =>
         addKeyboard(SHOW_WEATHER)
     );
 });
-
-async function getPlaceData(ctx: BotContext)
-{  
-    if(!await isValid(ctx, ["command"])) return;
-
-    const url = "https://nominatim.openstreetmap.org/search";
-    const qLocation = getLocationQuery(
-        ctx.has(message("location")) ? ctx.message.location : void 0
-    );   
-
-    userRequest.isActive = true;  
-
-    const response = await axios.get(url,
-    {
-        params:
-        {
-            q: ctx.has(message("text")) && ctx.message.text || qLocation,
-            format: "jsonv2",
-            addressdetails: "1",            
-            limit: "1",
-            "accept-language": "ru-RU"
-        },
-        timeout: 8000        
-    }).catch(error => error);    
-
-    finishRequest({ ctx, textOnReady: "Готов к работе! Повторите запрос." });      
-
-    return await isValid(ctx, ["status", "length"], response) ?
-        response.data : null;   
-   
-} 
 
 export { scene as regionScene, stage };

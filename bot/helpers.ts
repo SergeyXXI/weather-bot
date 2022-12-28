@@ -1,8 +1,5 @@
 import { Markup } from "telegraf";
-import { message } from "telegraf/filters";
-import axios, { AxiosResponse } from "axios";
-import Cron from "croner";
-import { BotContext, Address, PlaceType, Location, FinishRequestFn, Rule } from "types/index.js";
+import { BotContext, Address, PlaceType, Location } from "types/index.js";
 import { 
     SHOW_WEATHER, CHANGE_REGION_OPTIONS, 
     CONFIRM_REGION, CONFIRM_REGION_YES    
@@ -16,14 +13,6 @@ const defaultRegion =
     lon: 37.717454,
     isDefault: true
 }; 
-
-const userRequest = 
-{
-    isActive: false,
-    isRequestWhileActive: false
-};
-
-const cronJobs: Cron[] = [];
 
 const addKeyboard = (action: string, ctx?: BotContext) =>
 {
@@ -132,145 +121,7 @@ const formRegionName = (address: Address, type: PlaceType) =>
 const getLocationQuery = (location?: Location) =>
     location ? `${location.latitude}, ${location.longitude}` : null;
 
-const finishRequest = ({ ctx, textOnReady = "✅ Готов к работе!", reply }: FinishRequestFn) =>
-{
-    setTimeout(async () =>
-    {
-        userRequest.isActive = false;
-
-        if(userRequest.isRequestWhileActive)
-        {
-            userRequest.isRequestWhileActive = false;
-
-            await ctx.reply(textOnReady);
-
-            if(reply === SHOW_WEATHER)
-            {
-                await ctx.replyWithHTML(
-                    `Регион: ${ctx.session.region.name}.`,
-                    addKeyboard(SHOW_WEATHER)
-                );   
-            }
-                     
-        }
-    }, 1000);
-};
-
-async function isValid(ctx: BotContext, rules: Rule[] = [], response?: AxiosResponse)
-{
-    for(let i = 0; i < rules.length; i++)
-    {
-        const rule = rules[i];
-        const isString = typeof rule === "string";
-
-        switch(isString ? rule : rule.name)
-        {
-            case "command":                         
-                if(ctx.has(message("text")) && ctx.message.text.startsWith("/"))
-                {
-                    await ctx.reply(
-                        `❌ Введён некорректный текст. Запрос не должен начинаться с "/". Попробуйте снова.`
-                    );                   
-
-                    return false;
-                }
-                else break;
-
-            case "status":
-                if(response && (!response.status || response.status >= 400))
-                {
-                    await ctx.reply(
-                        "Произошла ошибка :( Немного подождите и попробуйте ещё раз.",
-                        isString ? {} : addKeyboard(rule.action) || {}
-                    ); 
-                    
-                    if(axios.isAxiosError(response)) console.log(response.message);
-
-                    return false;
-                }  
-                else break;
-
-            case "length":                
-                if(!response?.data?.length)
-                {
-                    await ctx.reply("Не смог найти указанный регион :( Попробуйте изменить запрос.");               
-            
-                    return false; 
-                }
-                else break;
-
-            default: break;
-        }
-    }    
-
-    return true;
-}
-
-function getJobs(ctx?: BotContext)
-{
-    if(!cronJobs.length && ctx)
-    {
-        cronJobs.push( 
-            Cron("30 19 * * *", () => showWeather(ctx),
-                { paused: true, timezone: "Europe/Moscow" })            
-        );
-    }    
-
-    return cronJobs;
-}
-
-async function showWeather(ctx: BotContext)
-{
-    const result = await getWeatherData(ctx);
-
-    if(!result) return;
-
-    const {
-        temp, feels_like: feelsLike, icon,
-        condition: _condition, prec_type: _precType   
-    } = result;    
-
-    const iconId = getIconFileId(icon);
-    const condition = getWeatherCondition(_condition);
-    const precType = _precType === 0 ? ", без осадков." : ".";     
-    
-    if(iconId) await ctx.replyWithPhoto(iconId);
-    else       console.log("НОВАЯ ИКОНКА", icon);      
-    
-    await ctx.replyWithHTML(        
-        `Сейчас <b>${temp}°</b>.\n` +
-        `Ощущается как ${feelsLike}°.\n` +
-        condition + precType,
-        addKeyboard(SHOW_WEATHER)
-    );      
-}
-
-async function getWeatherData(ctx: BotContext)
-{    
-    const url = "https://api.weather.yandex.ru/v2/forecast";
-    const { lat, lon } = ctx.session.region;    
-
-    userRequest.isActive = true; 
-
-    const response = await axios.get(url,
-    {
-        params: { lat, lon, limit: 1 },
-        headers:
-        {        
-            "X-Yandex-API-Key": process.env.YAPOGODA_TOKEN        
-        },
-        timeout: 8000
-    }).catch(error => error);    
-
-    finishRequest({ ctx, reply: SHOW_WEATHER });   
-
-    return await isValid(ctx, [{ name: "status", action: SHOW_WEATHER}], response) ?
-        response.data.fact : null;  
-   
-}
-
 export { 
     defaultRegion, formRegionName, addKeyboard, removeKeyboard, 
-    getWeatherCondition, getIconFileId, getLocationQuery,
-    userRequest, finishRequest, isValid, getJobs, showWeather
+    getWeatherCondition, getIconFileId, getLocationQuery    
 };

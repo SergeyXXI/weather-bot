@@ -1,6 +1,8 @@
 import { MiddlewareFn } from "telegraf";
 import { BotContext } from "types/index.js";
-import { defaultRegion, userRequest, getJobs } from "./helpers.js";
+import { defaultRegion } from "./helpers.js";
+import { userRequest } from "./client.js";
+import { getJobs } from "./cron.js";
 
 const initialMW: MiddlewareFn<BotContext> = async (ctx, next) =>
 {    

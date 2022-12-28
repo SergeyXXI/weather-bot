@@ -1,13 +1,14 @@
 import { message } from "telegraf/filters";
 import bot from "./bot.js";
-import { 
-    addKeyboard, removeKeyboard,  getJobs, showWeather    
-} from "./helpers.js";
+import { addKeyboard, removeKeyboard } from "./helpers.js";
 import { regionScene } from "./regionScene.js";
 import { SHOW_WEATHER } from "./actions.js";
+import { showWeather } from "./handlers.js";
+import { getJobs } from "./cron.js";
 
 bot.start(async ctx =>
 {
+    console.log(ctx.message);
     await ctx.reply("Приветствую!", removeKeyboard());
     await ctx.replyWithHTML(
         "Я показываю погоду в выбранном регионе. " +
@@ -68,7 +69,7 @@ bot.launch(
     {
         domain: process.env.WEBHOOK_DOMAIN!,
         hookPath: process.env.WEBHOOK_PATH,
-        port: +process.env.WEBHOOK_PORT!
+        port: +process.env.WEBHOOK_PORT! || 3000
     },
     dropPendingUpdates: true
 });
