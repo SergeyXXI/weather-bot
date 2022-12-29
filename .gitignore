@@ -3,3 +3,4 @@
 node_modules
 dist
 bot/db-dev.json
+getWebhook.js

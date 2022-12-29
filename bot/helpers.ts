@@ -105,9 +105,9 @@ const formRegionName = (address: Address, type: PlaceType) =>
         municipality = "", county = "", state = "", suburb = "",
         country = "", country_code: countryCode = ""
     } = address; 
-    const place = address[type] || address.city_district || address.city || address.town ||
-    address.suburb && address.state || address.hamlet || "НП не определён"; 
-    const result = [place];  
+    const place = address[type] || address.city || address.town || address.state ||
+        address.hamlet || "НП не определён"; 
+    const result = [place];    
         
     if(municipality)                    result.push(municipality);
     if(suburb)                          result.push(suburb);
