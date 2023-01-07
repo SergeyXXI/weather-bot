@@ -11,8 +11,8 @@ const userRequest =
 };
 
 async function requestWeatherData(ctx: BotContext)
-{    
-    const url = "https://api.weather.yandex.ru/v2/forecast";
+{        
+    const url = "https://api.weather.yandex.ru/v2/informers";
     const { lat, lon } = ctx.session.region;    
 
     userRequest.isActive = true; 
@@ -117,7 +117,11 @@ async function isValid(ctx: BotContext, rules: Rule[] = [], response?: AxiosResp
                         isString ? {} : addKeyboard(rule.action) || {}
                     ); 
                     
-                    if(axios.isAxiosError(response)) console.log(response);                    
+                    if(axios.isAxiosError(response))
+                    {
+                        console.log(response);                    
+                        console.log("ERROR:", response.message);
+                    }
 
                     return false;
                 }  

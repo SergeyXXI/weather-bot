@@ -13,7 +13,7 @@ type BotSession =
     },
     isOwner: boolean,
     isCasual: boolean,
-    isSchedule: boolean    
+    hasShedule: boolean    
 } & Scenes.WizardSession<RegionWizardSession>;
 
 type BotContext = 

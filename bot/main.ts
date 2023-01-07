@@ -29,15 +29,15 @@ bot.command("schedule", async ctx =>
 
     const jobs = getJobs(ctx);
 
-    if(!ctx.session.isSchedule)
+    if(!ctx.session.hasShedule)
     {
-        ctx.session.isSchedule = true;     
+        ctx.session.hasShedule = true;     
         jobs.forEach(job => job.resume());   
         await ctx.reply("✅ Информирование по расписанию включено!");
     }
     else
     {
-        ctx.session.isSchedule = false;        
+        ctx.session.hasShedule = false;        
         jobs.forEach(job => job.pause());
         await ctx.reply("❗ Информирование по расписанию выключено!");
     }

@@ -15,7 +15,7 @@ const initialMW: MiddlewareFn<BotContext> = async (ctx, next) =>
         ctx.message?.from.id === +process.env.CASUAL_ID! ||
         ctx.callbackQuery?.from.id === +process.env.CASUAL_ID!;     
 
-    if(ctx.session.isSchedule && !getJobs().length)
+    if(ctx.session.hasShedule && !getJobs().length)
         getJobs(ctx).forEach(job => job.resume());
 
     await next();

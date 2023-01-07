@@ -4,7 +4,7 @@
         "allowJs": true, 
         "baseUrl": "bot",
         "lib": ["es2021"],
-        "module": "ES2020",
+        "module": "ES2022",
         "noImplicitAny": true,
         "outDir": "dist",
         "resolveJsonModule": true,
