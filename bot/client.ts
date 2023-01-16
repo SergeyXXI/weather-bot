@@ -58,7 +58,7 @@ async function requestPlaceData(ctx: BotContext)
         timeout: 8000        
     }).catch(error => error);    
 
-    finishRequest({ ctx, textOnReady: "Готов к работе! Повторите запрос." });      
+    finishRequest({ ctx, textOnReady: "✅ Готов к работе! Повторите запрос." });      
 
     return await isValid(ctx, ["status", "length"], response) ?
         response.data : null;   
@@ -69,12 +69,8 @@ const finishRequest = ({ ctx, textOnReady = "✅ Готов к работе!", r
 {
     setTimeout(async () =>
     {
-        userRequest.isActive = false;
-
         if(userRequest.isRequestWhileActive)
         {
-            userRequest.isRequestWhileActive = false;
-
             await ctx.reply(textOnReady);
 
             if(reply === SHOW_WEATHER)
@@ -83,9 +79,12 @@ const finishRequest = ({ ctx, textOnReady = "✅ Готов к работе!", r
                     `Регион: ${ctx.session.region.name}.`,
                     addKeyboard(SHOW_WEATHER)
                 );   
-            }
-                     
+            }                     
         }
+
+        userRequest.isActive = false;
+        userRequest.isRequestWhileActive = false;
+
     }, 1000);
 };
 
@@ -94,9 +93,9 @@ async function isValid(ctx: BotContext, rules: Rule[] = [], response?: AxiosResp
     for(let i = 0; i < rules.length; i++)
     {
         const rule = rules[i];
-        const isString = typeof rule === "string";
+        const isRuleString = typeof rule === "string";
 
-        switch(isString ? rule : rule.name)
+        switch(isRuleString ? rule : rule.name)
         {
             case "command":                         
                 if(ctx.has(message("text")) && ctx.message.text.startsWith("/"))
@@ -110,18 +109,27 @@ async function isValid(ctx: BotContext, rules: Rule[] = [], response?: AxiosResp
                 else break;
 
             case "status":
-                if(response && (!response.status || response.status >= 400))
-                {
-                    await ctx.reply(
-                        "Произошла ошибка :( Немного подождите и попробуйте ещё раз.",
-                        isString ? {} : addKeyboard(rule.action) || {}
-                    ); 
-                    
-                    if(axios.isAxiosError(response))
+                if(axios.isAxiosError(response))
+                { 
+                    const status = response.response?.status;
+                    const msg = response.response?.statusText;                  
+
+                    if(status === 403 && msg === "Forbidden")
                     {
-                        console.log(response);                    
-                        console.log("ERROR:", response.message);
+                        await ctx.reply(
+                            "🏖️ На сегодня моя смена закончена. Возвращайтесь завтра."                            
+                        ); 
                     }
+                    else
+                    {
+                        await ctx.reply(
+                            "Произошла ошибка :( Немного подождите и попробуйте ещё раз.",
+                            isRuleString ? {} : addKeyboard(rule.action) || {}
+                        ); 
+                    }                    
+                    
+                    console.log(response);                    
+                    console.log("ERROR:", response.message);                    
 
                     return false;
                 }  

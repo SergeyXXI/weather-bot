@@ -68,7 +68,7 @@ bot.launch(
     {
         domain: process.env.WEBHOOK_DOMAIN!,
         hookPath: process.env.WEBHOOK_PATH,
-        port: +process.env.WEBHOOK_PORT! || 3000
+        port: +process.env.PORT! || 3000
     },
     dropPendingUpdates: true
 });
