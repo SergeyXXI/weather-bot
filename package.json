@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "start": "node dist/main.js",
+        "start-polling": "node -r dotenv/config dist/main.js",
         "start-dev": "cross-env NODE_ENV=dev ts-node -r dotenv/config bot/main.ts",
         "dev": "cross-env NODE_ENV=dev nodemon",
         "build": "rimraf dist && tsc",
